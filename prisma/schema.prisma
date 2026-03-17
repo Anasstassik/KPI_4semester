@@ -23,6 +23,10 @@ model Discipline {
 model LabWork {
   id           Int        @id @default(autoincrement())
   title        String
+  description  String?
+  deadline     DateTime
+  status       String     @default("До виконання")
+
   disciplineId Int
   discipline   Discipline @relation(fields: [disciplineId], references: [id])
 }

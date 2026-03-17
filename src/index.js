@@ -67,6 +67,33 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+app.post('/api/disciplines', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'TEACHER') {
+    return res.status(403).json({ error: 'Тільки викладач може створювати дисципліни' });
+  }
+
+  try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'Назва обов\'язкова' });
+
+    const existing = await prisma.discipline.findUnique({ where: { name } });
+    if (existing) {
+      return res.status(409).json({ error: 'Така дисципліна вже існує' });
+    }
+
+    const discipline = await prisma.discipline.create({ data: { name } });
+    res.status(201).json(discipline);
+  } catch (error) {
+    res.status(500).json({ error: 'Помилка сервера' });
+  }
+});
+
+app.get('/api/disciplines', authenticateToken, async (req, res) => {
+  const disciplines = await prisma.discipline.findMany();
+  res.json(disciplines);
+});
+
+
 module.exports = { app, authenticateToken };
 
 if (require.main === module) {

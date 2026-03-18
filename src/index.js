@@ -32,7 +32,12 @@ app.post('/api/register', async (req, res) => {
   try {
     const { email, password, role } = req.body;
     if (!email || !password || !role) {
-      return res.status(400).json({ error: 'Всі поля обов\'язкові' });
+      return res.status(400).json({ error: 'Всі поля обов\'язкові' }); 
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Некоректний формат email' });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -82,7 +87,7 @@ app.post('/api/disciplines', authenticateToken, async (req, res) => {
     }
 
     const discipline = await prisma.discipline.create({ data: { name } });
-    res.status(201).json(discipline);
+    res.status(201).json(discipline); 
   } catch (error) {
     res.status(500).json({ error: 'Помилка сервера' });
   }
@@ -95,7 +100,7 @@ app.get('/api/disciplines', authenticateToken, async (req, res) => {
 
 app.post('/api/labs', authenticateToken, async (req, res) => {
   if (req.user.role !== 'TEACHER') {
-    return res.status(403).json({ error: 'Доступ заборонено. Тільки викладач створює лаби.' });
+    return res.status(403).json({ error: 'Доступ заборонено' });
   }
 
   try {
@@ -103,7 +108,7 @@ app.post('/api/labs', authenticateToken, async (req, res) => {
 
     const deadlineDate = new Date(deadline);
     if (deadlineDate < new Date()) {
-      return res.status(400).json({ error: 'Помилка: дедлайн не може бути в минулому' });
+      return res.status(400).json({ error: 'Дедлайн не може бути в минулому' });
     }
 
     const lab = await prisma.labWork.create({
@@ -135,7 +140,7 @@ app.patch('/api/labs/:id/status', authenticateToken, async (req, res) => {
     });
     res.json(updatedLab);
   } catch (error) {
-    res.status(404).json({ error: 'Лабораторну роботу не знайдено' });
+    res.status(404).json({ error: 'Лабораторну не знайдено' });
   }
 });
 
@@ -147,10 +152,9 @@ app.get('/api/labs', authenticateToken, async (req, res) => {
     });
     res.json(labs);
   } catch (error) {
-    res.status(500).json({ error: 'Помилка отримання списку' });
+    res.status(500).json({ error: 'Помилка сервера' });
   }
 });
-
 
 module.exports = { app, authenticateToken };
 

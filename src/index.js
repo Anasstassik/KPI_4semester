@@ -28,6 +28,15 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const validateStatus = (status) => {
+  const allowed = ['До виконання', 'На перевірці', 'Здано'];
+  return allowed.includes(status);
+};
+
+const isDeadlineValid = (deadlineDate) => {
+  return new Date(deadlineDate) >= new Date();
+};
+
 app.post('/api/register', async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -102,12 +111,10 @@ app.post('/api/labs', authenticateToken, async (req, res) => {
   if (req.user.role !== 'TEACHER') {
     return res.status(403).json({ error: 'Доступ заборонено' });
   }
-
-  try {
+    try {
     const { title, description, deadline, disciplineId } = req.body;
 
-    const deadlineDate = new Date(deadline);
-    if (deadlineDate < new Date()) {
+    if (!isDeadlineValid(deadline)) {
       return res.status(400).json({ error: 'Дедлайн не може бути в минулому' });
     }
 
@@ -115,7 +122,7 @@ app.post('/api/labs', authenticateToken, async (req, res) => {
       data: { 
         title, 
         description, 
-        deadline: deadlineDate, 
+        deadline: new Date(deadline), 
         disciplineId: parseInt(disciplineId) 
       }
     });
@@ -125,11 +132,52 @@ app.post('/api/labs', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/labs', authenticateToken, async (req, res) => {
+  try {
+    const labs = await prisma.labWork.findMany({
+      include: { discipline: true },
+      orderBy: { deadline: 'asc' } 
+    });
+    res.json(labs);
+  } catch (error) {
+    res.status(500).json({ error: 'Помилка сервера' });
+  }
+});
+
+app.put('/api/labs/:id', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'TEACHER') {
+    return res.status(403).json({ error: 'Тільки викладач може редагувати лабораторні' });
+  }
+
+  try {
+    const { title, description, deadline } = req.body;
+    const dataToUpdate = {};
+
+    if (title) dataToUpdate.title = title;
+    if (description) dataToUpdate.description = description;
+    
+    if (deadline) {
+      if (!isDeadlineValid(deadline)) {
+        return res.status(400).json({ error: 'Новий дедлайн не може бути в минулому' });
+      }
+      dataToUpdate.deadline = new Date(deadline);
+    }
+
+    const updatedLab = await prisma.labWork.update({
+      where: { id: parseInt(req.params.id) },
+      data: dataToUpdate
+    });
+    
+    res.json(updatedLab);
+  } catch (error) {
+    res.status(404).json({ error: 'Лабораторну роботу не знайдено' });
+  }
+});
+
 app.patch('/api/labs/:id/status', authenticateToken, async (req, res) => {
   const { status } = req.body;
-  const allowedStatuses = ['До виконання', 'На перевірці', 'Здано'];
 
-  if (!allowedStatuses.includes(status)) {
+  if (!validateStatus(status)) {
     return res.status(400).json({ error: 'Некоректний статус' });
   }
 
@@ -144,15 +192,18 @@ app.patch('/api/labs/:id/status', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/labs', authenticateToken, async (req, res) => {
+app.delete('/api/labs/:id', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'TEACHER') {
+    return res.status(403).json({ error: 'Тільки викладач може видаляти лабораторні' });
+  }
+
   try {
-    const labs = await prisma.labWork.findMany({
-      include: { discipline: true },
-      orderBy: { deadline: 'asc' } 
+    await prisma.labWork.delete({
+      where: { id: parseInt(req.params.id) }
     });
-    res.json(labs);
+    res.status(204).send(); 
   } catch (error) {
-    res.status(500).json({ error: 'Помилка сервера' });
+    res.status(404).json({ error: 'Лабораторну роботу не знайдено' });
   }
 });
 

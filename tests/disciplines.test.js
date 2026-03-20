@@ -7,6 +7,7 @@ describe('Disciplines API', () => {
   let teacherToken;
 
   beforeAll(async () => {
+    await prisma.labWork.deleteMany();
     await prisma.discipline.deleteMany();
     await prisma.user.deleteMany();
 
@@ -32,6 +33,7 @@ describe('Disciplines API', () => {
       .send({ name: 'Математичний аналіз' });
     
     expect(res.statusCode).toEqual(201);
+    expect(res.body).toHaveProperty('name', 'Математичний аналіз');
   });
 
   it('повинен повернути 409 для дубльованих назв дисциплін', async () => {
@@ -41,5 +43,13 @@ describe('Disciplines API', () => {
       .send({ name: 'Математичний аналіз' });
     
     expect(res.statusCode).toEqual(409);
+  });
+
+  it('повинен повернути 401 для неавторизованого запиту', async () => {
+    const res = await request(app)
+      .post('/api/disciplines')
+      .send({ name: 'Фізика' });
+    
+    expect(res.statusCode).toEqual(401);
   });
 });

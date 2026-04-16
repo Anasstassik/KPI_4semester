@@ -6,7 +6,8 @@ const UserRepository = require('./infrastructure/UserRepository');
 const DisciplineRepository = require('./infrastructure/DisciplineRepository');
 const LabRepository = require('./infrastructure/LabRepository');
 
-const AuthUseCases = require('./application/AuthUseCases');
+const RegisterUserHandler = require('./application/handlers/auth/RegisterUserHandler');
+const LoginUserHandler = require('./application/handlers/auth/LoginUserHandler');
 const DisciplineUseCases = require('./application/DisciplineUseCases');
 const LabUseCases = require('./application/LabUseCases');
 
@@ -25,11 +26,13 @@ const userRepository = new UserRepository();
 const disciplineRepository = new DisciplineRepository();
 const labRepository = new LabRepository();
 
-const authUseCases = new AuthUseCases(userRepository, JWT_SECRET);
+const registerUserHandler = new RegisterUserHandler(userRepository);
+const loginUserHandler = new LoginUserHandler(JWT_SECRET);
+const authController = new AuthController(registerUserHandler, loginUserHandler);
+
 const disciplineUseCases = new DisciplineUseCases(disciplineRepository);
 const labUseCases = new LabUseCases(labRepository);
 
-const authController = new AuthController(authUseCases);
 const disciplineController = new DisciplineController(disciplineUseCases);
 const labController = new LabController(labUseCases);
 

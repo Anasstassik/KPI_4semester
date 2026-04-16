@@ -8,7 +8,10 @@ const LabRepository = require('./infrastructure/LabRepository');
 
 const RegisterUserHandler = require('./application/handlers/auth/RegisterUserHandler');
 const LoginUserHandler = require('./application/handlers/auth/LoginUserHandler');
-const DisciplineUseCases = require('./application/DisciplineUseCases');
+
+const CreateDisciplineHandler = require('./application/handlers/disciplines/CreateDisciplineHandler');
+const GetAllDisciplinesHandler = require('./application/handlers/disciplines/GetAllDisciplinesHandler');
+
 const LabUseCases = require('./application/LabUseCases');
 
 const AuthController = require('./presentation/AuthController');
@@ -30,10 +33,11 @@ const registerUserHandler = new RegisterUserHandler(userRepository);
 const loginUserHandler = new LoginUserHandler(JWT_SECRET);
 const authController = new AuthController(registerUserHandler, loginUserHandler);
 
-const disciplineUseCases = new DisciplineUseCases(disciplineRepository);
-const labUseCases = new LabUseCases(labRepository);
+const createDisciplineHandler = new CreateDisciplineHandler(disciplineRepository);
+const getAllDisciplinesHandler = new GetAllDisciplinesHandler();
+const disciplineController = new DisciplineController(createDisciplineHandler, getAllDisciplinesHandler);
 
-const disciplineController = new DisciplineController(disciplineUseCases);
+const labUseCases = new LabUseCases(labRepository);
 const labController = new LabController(labUseCases);
 
 app.post('/api/register', (req, res) => authController.register(req, res));

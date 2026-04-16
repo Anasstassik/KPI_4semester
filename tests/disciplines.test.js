@@ -33,7 +33,7 @@ describe('Disciplines API', () => {
       .send({ name: 'Математичний аналіз' });
     
     expect(res.statusCode).toEqual(201);
-    expect(res.body).toHaveProperty('name', 'Математичний аналіз');
+    expect(res.body).toHaveProperty('disciplineId');
   });
 
   it('повинен повернути 409 для дубльованих назв дисциплін', async () => {

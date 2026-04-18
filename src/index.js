@@ -12,7 +12,11 @@ const LoginUserHandler = require('./application/handlers/auth/LoginUserHandler')
 const CreateDisciplineHandler = require('./application/handlers/disciplines/CreateDisciplineHandler');
 const GetAllDisciplinesHandler = require('./application/handlers/disciplines/GetAllDisciplinesHandler');
 
-const LabUseCases = require('./application/LabUseCases');
+const CreateLabHandler = require('./application/handlers/labs/CreateLabHandler');
+const UpdateLabHandler = require('./application/handlers/labs/UpdateLabHandler');
+const ChangeLabStatusHandler = require('./application/handlers/labs/ChangeLabStatusHandler');
+const DeleteLabHandler = require('./application/handlers/labs/DeleteLabHandler');
+const GetAllLabsHandler = require('./application/handlers/labs/GetAllLabsHandler');
 
 const AuthController = require('./presentation/AuthController');
 const DisciplineController = require('./presentation/DisciplineController');
@@ -37,8 +41,19 @@ const createDisciplineHandler = new CreateDisciplineHandler(disciplineRepository
 const getAllDisciplinesHandler = new GetAllDisciplinesHandler();
 const disciplineController = new DisciplineController(createDisciplineHandler, getAllDisciplinesHandler);
 
-const labUseCases = new LabUseCases(labRepository);
-const labController = new LabController(labUseCases);
+const createLabHandler = new CreateLabHandler(labRepository);
+const updateLabHandler = new UpdateLabHandler(labRepository);
+const changeLabStatusHandler = new ChangeLabStatusHandler(labRepository);
+const deleteLabHandler = new DeleteLabHandler(labRepository);
+const getAllLabsHandler = new GetAllLabsHandler();
+
+const labController = new LabController(
+  createLabHandler,
+  getAllLabsHandler,
+  updateLabHandler,
+  changeLabStatusHandler,
+  deleteLabHandler
+);
 
 app.post('/api/register', (req, res) => authController.register(req, res));
 app.post('/api/login', (req, res) => authController.login(req, res));

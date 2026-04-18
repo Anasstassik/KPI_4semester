@@ -37,10 +37,15 @@ describe('Disciplines API', () => {
   });
 
   it('повинен повернути 409 для дубльованих назв дисциплін', async () => {
+    await request(app)
+      .post('/api/disciplines')
+      .set('Authorization', `Bearer ${teacherToken}`)
+      .send({ name: 'Хімія' });
+
     const res = await request(app)
       .post('/api/disciplines')
       .set('Authorization', `Bearer ${teacherToken}`)
-      .send({ name: 'Математичний аналіз' });
+      .send({ name: 'Хімія' });
     
     expect(res.statusCode).toEqual(409);
   });

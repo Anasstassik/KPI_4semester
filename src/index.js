@@ -1,75 +1,43 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-
-const UserRepository = require('./infrastructure/UserRepository');
-const DisciplineRepository = require('./infrastructure/DisciplineRepository');
-const LabRepository = require('./infrastructure/LabRepository');
-
-const RegisterUserHandler = require('./application/handlers/auth/RegisterUserHandler');
-const LoginUserHandler = require('./application/handlers/auth/LoginUserHandler');
-
-const CreateDisciplineHandler = require('./application/handlers/disciplines/CreateDisciplineHandler');
-const GetAllDisciplinesHandler = require('./application/handlers/disciplines/GetAllDisciplinesHandler');
-
-const CreateLabHandler = require('./application/handlers/labs/CreateLabHandler');
-const UpdateLabHandler = require('./application/handlers/labs/UpdateLabHandler');
-const ChangeLabStatusHandler = require('./application/handlers/labs/ChangeLabStatusHandler');
-const DeleteLabHandler = require('./application/handlers/labs/DeleteLabHandler');
-const GetAllLabsHandler = require('./application/handlers/labs/GetAllLabsHandler');
-
-const AuthController = require('./presentation/AuthController');
-const DisciplineController = require('./presentation/DisciplineController');
-const LabController = require('./presentation/LabController');
-
-const { authenticateToken, JWT_SECRET } = require('./presentation/authMiddleware');
+import express from 'express';
+import { RegisterUserHandler } from './application/handlers/auth/RegisterUserHandler';
+import { AuthController } from './presentation/AuthController';
+import { DisciplineRepository } from './infrastructure/DisciplineRepository';
+import { CreateDisciplineHandler } from './application/handlers/disciplines/CreateDisciplineHandler';
+import { GetAllDisciplinesHandler } from './application/handlers/disciplines/GetAllDisciplinesHandler';
+import { DisciplineController } from './presentation/DisciplineController';
+import { LabRepository } from './infrastructure/LabRepository';
+import { CreateLabHandler } from './application/handlers/labs/CreateLabHandler';
+import { ChangeLabStatusHandler } from './application/handlers/labs/ChangeLabStatusHandler';
+import { LabController } from './presentation/LabController';
+import { authenticate } from './presentation/authMiddleware';
 
 const app = express();
 
-app.use(cors());
 app.use(express.json());
 
-const userRepository = new UserRepository();
+const registerUserHandler = new RegisterUserHandler();
+const authController = new AuthController(registerUserHandler);
+
 const disciplineRepository = new DisciplineRepository();
-const labRepository = new LabRepository();
-
-const registerUserHandler = new RegisterUserHandler(userRepository);
-const loginUserHandler = new LoginUserHandler(JWT_SECRET);
-const authController = new AuthController(registerUserHandler, loginUserHandler);
-
 const createDisciplineHandler = new CreateDisciplineHandler(disciplineRepository);
 const getAllDisciplinesHandler = new GetAllDisciplinesHandler();
 const disciplineController = new DisciplineController(createDisciplineHandler, getAllDisciplinesHandler);
 
+const labRepository = new LabRepository();
 const createLabHandler = new CreateLabHandler(labRepository);
-const updateLabHandler = new UpdateLabHandler(labRepository);
 const changeLabStatusHandler = new ChangeLabStatusHandler(labRepository);
-const deleteLabHandler = new DeleteLabHandler(labRepository);
-const getAllLabsHandler = new GetAllLabsHandler();
+const labController = new LabController(createLabHandler, changeLabStatusHandler);
 
-const labController = new LabController(
-  createLabHandler,
-  getAllLabsHandler,
-  updateLabHandler,
-  changeLabStatusHandler,
-  deleteLabHandler
-);
+app.post('/api/auth/register', authController.register);
 
-app.post('/api/register', (req, res) => authController.register(req, res));
-app.post('/api/login', (req, res) => authController.login(req, res));
+app.post('/api/disciplines', authenticate, disciplineController.create);
+app.get('/api/disciplines', authenticate, disciplineController.getAll);
 
-app.post('/api/disciplines', authenticateToken, (req, res) => disciplineController.create(req, res));
-app.get('/api/disciplines', authenticateToken, (req, res) => disciplineController.getAll(req, res));
+app.post('/api/labs', authenticate, labController.create);
+app.patch('/api/labs/:id/status', authenticate, labController.changeStatus);
 
-app.post('/api/labs', authenticateToken, (req, res) => labController.create(req, res));
-app.get('/api/labs', authenticateToken, (req, res) => labController.getAll(req, res));
-app.put('/api/labs/:id', authenticateToken, (req, res) => labController.update(req, res));
-app.patch('/api/labs/:id/status', authenticateToken, (req, res) => labController.changeStatus(req, res));
-app.delete('/api/labs/:id', authenticateToken, (req, res) => labController.delete(req, res));
+const PORT = process.env.PORT || 3000;
 
-if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`Сервер на порту ${PORT}`));
-}
-
-module.exports = { app, authenticateToken };
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

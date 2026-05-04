@@ -1,6 +1,6 @@
-const request = require('supertest');
-const { app } = require('../../src/index');
-const prisma = require('../../src/infrastructure/database');
+import request from 'supertest';
+import { app } from '../../src/index';
+import prisma from '../../src/infrastructure/database';
 
 describe('Auth Query API (Integration)', () => {
   const testUser = {

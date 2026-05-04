@@ -1,30 +1,37 @@
+const RegisterUserCommand = require('../application/commands/auth/RegisterUserCommand');
+const LoginUserQuery = require('../application/queries/auth/LoginUserQuery');
+
 class AuthController {
-  constructor(authUseCases) {
-    this.authUseCases = authUseCases;
+  constructor(registerHandler, loginHandler) {
+    this.registerHandler = registerHandler;
+    this.loginHandler = loginHandler;
   }
 
   async register(req, res) {
     try {
-      const user = await this.authUseCases.register(req.body);
-      res.status(201).json({ message: 'Створено', userId: user.id });
+      const command = new RegisterUserCommand(req.body);
+      const result = await this.registerHandler.execute(command);
+      
+      res.status(201).json(result);
     } catch (error) {
       if (error.name === 'DomainError') {
-        const status = error.message === 'Email вже використовується' ? 409 : 400;
-        return res.status(status).json({ error: error.message });
+        return res.status(400).json({ error: error.message });
       }
-      res.status(500).json({ error: 'Помилка сервера' });
+      res.status(500).json({ error: 'Внутрішня помилка сервера' });
     }
   }
 
   async login(req, res) {
     try {
-      const result = await this.authUseCases.login(req.body);
+      const query = new LoginUserQuery(req.body);
+      const result = await this.loginHandler.execute(query);
+      
       res.status(200).json(result);
     } catch (error) {
       if (error.name === 'DomainError') {
-        return res.status(400).json({ error: error.message });
+        return res.status(401).json({ error: error.message });
       }
-      res.status(500).json({ error: 'Помилка сервера' });
+      res.status(500).json({ error: 'Внутрішня помилка сервера' });
     }
   }
 }

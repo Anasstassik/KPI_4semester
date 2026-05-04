@@ -33,14 +33,19 @@ describe('Disciplines API', () => {
       .send({ name: 'Математичний аналіз' });
     
     expect(res.statusCode).toEqual(201);
-    expect(res.body).toHaveProperty('name', 'Математичний аналіз');
+    expect(res.body).toHaveProperty('disciplineId');
   });
 
   it('повинен повернути 409 для дубльованих назв дисциплін', async () => {
+    await request(app)
+      .post('/api/disciplines')
+      .set('Authorization', `Bearer ${teacherToken}`)
+      .send({ name: 'Хімія' });
+
     const res = await request(app)
       .post('/api/disciplines')
       .set('Authorization', `Bearer ${teacherToken}`)
-      .send({ name: 'Математичний аналіз' });
+      .send({ name: 'Хімія' });
     
     expect(res.statusCode).toEqual(409);
   });

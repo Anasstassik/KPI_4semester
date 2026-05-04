@@ -6,9 +6,17 @@ const UserRepository = require('./infrastructure/UserRepository');
 const DisciplineRepository = require('./infrastructure/DisciplineRepository');
 const LabRepository = require('./infrastructure/LabRepository');
 
-const AuthUseCases = require('./application/AuthUseCases');
-const DisciplineUseCases = require('./application/DisciplineUseCases');
-const LabUseCases = require('./application/LabUseCases');
+const RegisterUserHandler = require('./application/handlers/auth/RegisterUserHandler');
+const LoginUserHandler = require('./application/handlers/auth/LoginUserHandler');
+
+const CreateDisciplineHandler = require('./application/handlers/disciplines/CreateDisciplineHandler');
+const GetAllDisciplinesHandler = require('./application/handlers/disciplines/GetAllDisciplinesHandler');
+
+const CreateLabHandler = require('./application/handlers/labs/CreateLabHandler');
+const UpdateLabHandler = require('./application/handlers/labs/UpdateLabHandler');
+const ChangeLabStatusHandler = require('./application/handlers/labs/ChangeLabStatusHandler');
+const DeleteLabHandler = require('./application/handlers/labs/DeleteLabHandler');
+const GetAllLabsHandler = require('./application/handlers/labs/GetAllLabsHandler');
 
 const AuthController = require('./presentation/AuthController');
 const DisciplineController = require('./presentation/DisciplineController');
@@ -25,13 +33,27 @@ const userRepository = new UserRepository();
 const disciplineRepository = new DisciplineRepository();
 const labRepository = new LabRepository();
 
-const authUseCases = new AuthUseCases(userRepository, JWT_SECRET);
-const disciplineUseCases = new DisciplineUseCases(disciplineRepository);
-const labUseCases = new LabUseCases(labRepository);
+const registerUserHandler = new RegisterUserHandler(userRepository);
+const loginUserHandler = new LoginUserHandler(JWT_SECRET);
+const authController = new AuthController(registerUserHandler, loginUserHandler);
 
-const authController = new AuthController(authUseCases);
-const disciplineController = new DisciplineController(disciplineUseCases);
-const labController = new LabController(labUseCases);
+const createDisciplineHandler = new CreateDisciplineHandler(disciplineRepository);
+const getAllDisciplinesHandler = new GetAllDisciplinesHandler();
+const disciplineController = new DisciplineController(createDisciplineHandler, getAllDisciplinesHandler);
+
+const createLabHandler = new CreateLabHandler(labRepository);
+const updateLabHandler = new UpdateLabHandler(labRepository);
+const changeLabStatusHandler = new ChangeLabStatusHandler(labRepository);
+const deleteLabHandler = new DeleteLabHandler(labRepository);
+const getAllLabsHandler = new GetAllLabsHandler();
+
+const labController = new LabController(
+  createLabHandler,
+  getAllLabsHandler,
+  updateLabHandler,
+  changeLabStatusHandler,
+  deleteLabHandler
+);
 
 app.post('/api/register', (req, res) => authController.register(req, res));
 app.post('/api/login', (req, res) => authController.login(req, res));

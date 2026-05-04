@@ -1,69 +1,73 @@
+const CreateLabCommand = require('../application/commands/labs/CreateLabCommand');
+const UpdateLabCommand = require('../application/commands/labs/UpdateLabCommand');
+const ChangeLabStatusCommand = require('../application/commands/labs/ChangeLabStatusCommand');
+const DeleteLabCommand = require('../application/commands/labs/DeleteLabCommand');
+const GetAllLabsQuery = require('../application/queries/labs/GetAllLabsQuery');
+
 class LabController {
-  constructor(labUseCases) {
-    this.labUseCases = labUseCases;
+  constructor(createHandler, getAllHandler, updateHandler, changeStatusHandler, deleteHandler) {
+    this.createHandler = createHandler;
+    this.getAllHandler = getAllHandler;
+    this.updateHandler = updateHandler;
+    this.changeStatusHandler = changeStatusHandler;
+    this.deleteHandler = deleteHandler;
   }
 
   async create(req, res) {
     try {
-      const lab = await this.labUseCases.create(req.body, req.user.role);
-      res.status(201).json(lab);
+      const command = new CreateLabCommand(req.body, req.user.role);
+      const result = await this.createHandler.execute(command);
+      res.status(201).json(result);
     } catch (error) {
       if (error.name === 'DomainError') {
-        if (error.message === 'Доступ заборонено') return res.status(403).json({ error: error.message });
-        return res.status(400).json({ error: error.message });
+        const statusCode = error.message.includes('Тільки викладач') ? 403 : 400;
+        return res.status(statusCode).json({ error: error.message });
       }
-      res.status(500).json({ error: 'Помилка при створенні лаби' });
+      res.status(500).json({ error: 'Внутрішня помилка сервера' });
     }
   }
 
   async getAll(req, res) {
     try {
-      const labs = await this.labUseCases.getAll();
-      res.json(labs);
+      const query = new GetAllLabsQuery();
+      const result = await this.getAllHandler.execute(query);
+      res.status(200).json(result);
     } catch (error) {
-      res.status(500).json({ error: 'Помилка сервера' });
+      res.status(500).json({ error: 'Внутрішня помилка сервера' });
     }
   }
 
   async update(req, res) {
     try {
-      const lab = await this.labUseCases.update(req.params.id, req.body, req.user.role);
-      res.json(lab);
+      const command = new UpdateLabCommand(req.params.id, req.body, req.user.role);
+      await this.updateHandler.execute(command);
+      res.status(204).send();
     } catch (error) {
-      if (error.name === 'DomainError') {
-        if (error.message === 'Тільки викладач може редагувати лабораторні') return res.status(403).json({ error: error.message });
-        if (error.message === 'Лабораторну роботу не знайдено') return res.status(404).json({ error: error.message });
-        return res.status(400).json({ error: error.message });
-      }
-      res.status(500).json({ error: 'Помилка сервера' });
+      if (error.name === 'DomainError') return res.status(400).json({ error: error.message });
+      res.status(500).json({ error: 'Внутрішня помилка сервера' });
     }
   }
 
   async changeStatus(req, res) {
     try {
-      const lab = await this.labUseCases.changeStatus(req.params.id, req.body.status);
-      res.json(lab);
+      const command = new ChangeLabStatusCommand(req.params.id, req.body.status, req.user.role);
+      await this.changeStatusHandler.execute(command);
+      res.status(204).send();
     } catch (error) {
-      if (error.name === 'DomainError') {
-        if (error.message === 'Лабораторну не знайдено') return res.status(404).json({ error: error.message });
-        return res.status(400).json({ error: error.message });
-      }
-      res.status(500).json({ error: 'Помилка сервера' });
+      if (error.name === 'DomainError') return res.status(400).json({ error: error.message });
+      res.status(500).json({ error: 'Внутрішня помилка сервера' });
     }
   }
 
   async delete(req, res) {
     try {
-      await this.labUseCases.delete(req.params.id, req.user.role);
+      const command = new DeleteLabCommand(req.params.id, req.user.role);
+      await this.deleteHandler.execute(command);
       res.status(204).send();
     } catch (error) {
-      if (error.name === 'DomainError') {
-        if (error.message === 'Тільки викладач може видаляти лабораторні') return res.status(403).json({ error: error.message });
-        return res.status(404).json({ error: error.message });
-      }
-      res.status(500).json({ error: 'Помилка сервера' });
+      if (error.name === 'DomainError') return res.status(403).json({ error: error.message });
+      res.status(500).json({ error: 'Внутрішня помилка сервера' });
     }
   }
 }
-
 module.exports = LabController;

@@ -1,55 +1,49 @@
 import prisma from './database';
-import { Lab } from '../domain/Lab';
-import { LabStatus } from '../domain/value-objects/LabStatus';
+import { LabWork } from '../domain/LabWork';
 
 export interface ILabRepository {
-  save(lab: Lab): Promise<number>;
-  findById(id: number): Promise<Lab | null>;
-  update(lab: Lab): Promise<void>;
+  save(lab: LabWork): Promise<number>;
   delete(id: number): Promise<void>;
+  update(id: number, payload: { title: string; deadline: Date }): Promise<void>;
+  updateStatus(id: number, status: string): Promise<void>;
 }
 
 export class LabRepository implements ILabRepository {
-  async save(lab: Lab): Promise<number> {
+  async save(lab: LabWork): Promise<number> {
     const created = await prisma.labWork.create({
       data: {
         title: lab.title,
-        deadline: lab.deadline,
-        disciplineId: lab.disciplineId,
-        studentId: lab.studentId,
-        status: lab.status.value
+        deadline: new Date(lab.deadline),
+        status: lab.status,
+        disciplineId: Number(lab.disciplineId),
+        studentId: Number(lab.studentId)
       }
     });
     return created.id;
   }
 
-  async findById(id: number): Promise<Lab | null> {
-  const data = await prisma.labWork.findUnique({ where: { id } });
-  if (!data) return null;
+  async delete(id: number): Promise<void> {
+    await prisma.labWork.delete({
+      where: { id: Number(id) }
+    });
+  }
 
-  return new Lab({
-    id: data.id,
-    title: data.title,
-    deadline: data.deadline,
-    disciplineId: data.disciplineId,
-    studentId: data.studentId,
-    status: new LabStatus(data.status)
-  });
-}
-
-  async update(lab: Lab): Promise<void> {
-    if (!lab.id) return;
+  async update(id: number, payload: { title: string; deadline: Date }): Promise<void> {
     await prisma.labWork.update({
-      where: { id: lab.id },
+      where: { id: Number(id) },
       data: {
-        title: lab.title,
-        deadline: lab.deadline,
-        status: lab.status.value
+        title: payload.title,
+        deadline: new Date(payload.deadline)
       }
     });
   }
 
-  async delete(id: number): Promise<void> {
-    await prisma.labWork.delete({ where: { id } });
+  async updateStatus(id: number, status: string): Promise<void> {
+    await prisma.labWork.update({
+      where: { id: Number(id) },
+      data: {
+        status: String(status)
+      }
+    });
   }
 }

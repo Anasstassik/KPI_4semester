@@ -1,9 +1,9 @@
 export interface INotificationService {
-  sendWelcomeEmail(email: string): Promise<void>;
+  send(message: string): void;
 }
 
 export class NotificationService implements INotificationService {
-  async sendWelcomeEmail(email: string): Promise<void> {
-    console.log(`SENDING EMAIL TO: ${email}`);
+  send(message: string): void {
+    console.log(`[NOTIFICATION] ${new Date().toISOString()}: ${message}`);
   }
 }

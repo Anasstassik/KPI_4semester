@@ -1,17 +1,29 @@
-import { LabRepository } from '../../../infrastructure/LabRepository';
+import { ILabRepository } from '../../../infrastructure/LabRepository';
+import { INotificationService } from '../../../infrastructure/services/NotificationService';
+import { EventBus } from '../../../infrastructure/events/EventBus';
 import { UpdateLabCommand } from '../../commands/labs/UpdateLabCommand';
-import { DomainError } from '../../../domain/errors';
 
 export class UpdateLabHandler {
-  constructor(private labRepo: LabRepository) {}
+  constructor(
+    private repository: ILabRepository,
+    private notificationService: INotificationService,
+    private eventBus: EventBus
+  ) {}
 
-  async execute(command: UpdateLabCommand): Promise<void> {
-    const lab = await this.labRepo.findById(command.id);
-    if (!lab) throw new DomainError('Лабораторну не знайдено');
+  async execute(command: UpdateLabCommand, mode: 'sync' | 'async' = 'sync'): Promise<void> {
+    await this.repository.update(command.id, {
+      title: command.title,
+      deadline: command.deadline
+    });
 
-    lab.title = command.title;
-    lab.deadline = new Date(command.deadline);
-    
-    await this.labRepo.update(lab);
+    if (mode === 'sync') {
+      try {
+        this.notificationService.send(`Дані лабораторної "${command.title}" оновлено`);
+      } catch (error) {
+        console.error('Sync notification failed');
+      }
+    } else {
+      this.eventBus.publish('LabWorkUpdated', { id: command.id, title: command.title });
+    }
   }
 }

@@ -3,6 +3,7 @@ import cors from 'cors';
 import * as dotenv from 'dotenv';
 import { authRouter } from './presentation/routes/auth.routes';
 import { disciplineRouter } from './presentation/routes/discipline.routes';
+import { labRouter } from './presentation/routes/lab.routes';
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 
 app.use('/api', authRouter);
 app.use('/api', disciplineRouter);
+app.use('/api', labRouter);
 
 export { app };
 

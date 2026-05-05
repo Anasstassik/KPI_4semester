@@ -4,12 +4,15 @@ import { Discipline } from '../domain/Discipline';
 export interface IDisciplineRepository {
   save(discipline: Discipline): Promise<number>;
   findAll(): Promise<Discipline[]>;
+  findByName(name: string): Promise<any>;
 }
 
 export class DisciplineRepository implements IDisciplineRepository {
   async save(discipline: Discipline): Promise<number> {
     const created = await prisma.discipline.create({
-      data: { name: discipline.name }
+      data: {
+        name: discipline.name
+      }
     });
     return created.id;
   }
@@ -17,5 +20,11 @@ export class DisciplineRepository implements IDisciplineRepository {
   async findAll(): Promise<Discipline[]> {
     const data = await prisma.discipline.findMany();
     return data.map(item => new Discipline({ id: item.id, name: item.name }));
+  }
+
+  async findByName(name: string): Promise<any> {
+    return await prisma.discipline.findFirst({
+      where: { name }
+    });
   }
 }

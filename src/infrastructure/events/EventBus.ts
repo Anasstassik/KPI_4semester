@@ -1,25 +1,36 @@
-import { DomainEvent } from '../../domain/events/DomainEvent';
-
-export interface EventHandler<T extends DomainEvent> {
-  handle(event: T): Promise<void>;
-}
+type EventHandler = (event: any) => void | Promise<void>;
 
 export class EventBus {
-  private handlers: Map<string, EventHandler<any>[]> = new Map();
+  private static instance: EventBus;
+  private subscribers: Map<string, EventHandler[]> = new Map();
 
-  subscribe<T extends DomainEvent>(eventName: string, handler: EventHandler<T>): void {
-    if (!this.handlers.has(eventName)) {
-      this.handlers.set(eventName, []);
+  private constructor() {}
+
+  public static getInstance(): EventBus {
+    if (!EventBus.instance) {
+      EventBus.instance = new EventBus();
     }
-    this.handlers.get(eventName)!.push(handler);
+    return EventBus.instance;
   }
 
-  publish(eventName: string, event: DomainEvent): void {
-    const eventHandlers = this.handlers.get(eventName) || [];
-    for (const handler of eventHandlers) {
-      handler.handle(event).catch(() => {});
-    }
+  public subscribe(eventName: string, handler: EventHandler): void {
+    const handlers = this.subscribers.get(eventName) || [];
+    handlers.push(handler);
+    this.subscribers.set(eventName, handlers);
+  }
+
+  public publish(eventName: string, event: any): void {
+    const handlers = this.subscribers.get(eventName) || [];
+    
+    handlers.forEach(handler => {
+      try {
+        const result = handler(event);
+        if (result instanceof Promise) {
+          result.catch(err => console.error(`Async handler error for ${eventName}:`, err));
+        }
+      } catch (err) {
+        console.error(`Sync handler error for ${eventName}:`, err);
+      }
+    });
   }
 }
-
-export const eventBus = new EventBus();

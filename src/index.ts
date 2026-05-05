@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import { authRouter } from './presentation/routes/auth.routes';
+import { disciplineRouter } from './presentation/routes/discipline.routes';
 
 dotenv.config();
 
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api', authRouter);
+app.use('/api', disciplineRouter);
 
 export { app };
 

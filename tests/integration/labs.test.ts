@@ -13,25 +13,42 @@ describe('Labs API (Integration)', () => {
     await prisma.discipline.deleteMany();
     await prisma.user.deleteMany();
 
-    await request(app)
+    const regRes = await request(app)
       .post('/api/register')
       .send({ email: 'teacher_labs@kpi.ua', password: 'password123', role: 'TEACHER' });
+
+    if (regRes.statusCode !== 200 && regRes.statusCode !== 201) {
+      throw new Error(`Ошибка регистрации: ${JSON.stringify(regRes.body)}`);
+    }
 
     const loginRes = await request(app)
       .post('/api/login')
       .send({ email: 'teacher_labs@kpi.ua', password: 'password123' });
+
+    if (loginRes.statusCode !== 200) {
+      throw new Error(`Ошибка логина: ${JSON.stringify(loginRes.body)}`);
+    }
 
     teacherToken = loginRes.body.token;
 
     const user = await prisma.user.findFirst({
       where: { email: 'teacher_labs@kpi.ua' }
     });
-    validUserId = user!.id;
+
+    if (!user) {
+      throw new Error('Пользователь не найден в БД после успешной регистрации!');
+    }
+
+    validUserId = user.id;
 
     const disciplineRes = await request(app)
       .post('/api/disciplines')
       .set('Authorization', `Bearer ${teacherToken}`)
       .send({ name: 'Architecture and Design' });
+
+    if (disciplineRes.statusCode !== 200 && disciplineRes.statusCode !== 201) {
+      throw new Error(`Ошибка создания дисциплины: ${JSON.stringify(disciplineRes.body)}`);
+    }
 
     disciplineId = disciplineRes.body.id;
   });
@@ -49,11 +66,11 @@ describe('Labs API (Integration)', () => {
         title: 'CQRS Implementation',
         deadline: new Date().toISOString(),
         disciplineId: disciplineId,
-        studentId: validUserId 
+        studentId: validUserId
       });
 
     if (res.statusCode !== 201) {
-      console.error('SERVER ERROR:', res.body);
+      console.error('Ошибка создания лабы (sync):', res.body);
     }
 
     expect(res.statusCode).toBe(201);
@@ -70,8 +87,12 @@ describe('Labs API (Integration)', () => {
         title: 'Event Sourcing',
         deadline: new Date().toISOString(),
         disciplineId: disciplineId,
-        studentId: validUserId 
+        studentId: validUserId
       });
+      
+    if (res.statusCode !== 201) {
+      console.error('Ошибка создания лабы (async):', res.body);
+    }
 
     expect(res.statusCode).toBe(201);
     expect(res.body.communication).toBe('async');
